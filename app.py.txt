@@ -1,0 +1,79 @@
+import streamlit as st
+import pandas as pd
+
+# Pengaturan Halaman Website
+st.set_page_config(page_title="Rekap Kehadiran Siswa SMK", page_icon="📋", layout="wide")
+
+st.title("📋 Aplikasi Rekap Kehadiran Peserta Didik SMK")
+st.caption("Aplikasi sederhana berbasis Web untuk mempermudah wali kelas merangkum kehadiran siswa.")
+
+st.divider()
+
+# Pengaturan di Sidebar (Panel Samping)
+st.sidebar.header("⚙️ Pengaturan Kelas")
+nama_kelas = st.sidebar.text_input("Nama Kelas", "X KKA 1")
+jumlah_hari = st.sidebar.number_input("Total Hari Pertemuan", min_value=1, value=5)
+
+# Form Input Daftar Nama Siswa
+st.header("1. Input Data Nama Siswa")
+input_siswa = st.text_area(
+    "Masukkan daftar nama siswa (pisahkan tiap nama dengan baris baru / Enter):",
+    "Budi Santoso\nSiti Aminah\nRudi Hermawan\nDewi Lestari",
+    height=120
+)
+
+# Memisahkan string nama menjadi list
+daftar_nama = [nama.strip() for nama in input_siswa.split("\n") if nama.strip()]
+
+if daftar_nama:
+    st.divider()
+    st.header(f"2. Input Kehadiran Siswa - Kelas {nama_kelas}")
+    st.info(f"Total Pertemuan: **{jumlah_hari} Hari**. Masukkan jumlah hari kehadiran masing-masing siswa:")
+
+    # Header Tabel Input
+    col_nama, col_h, col_s, col_i, col_a = st.columns([3, 1, 1, 1, 1])
+    col_nama.markdown("**Nama Siswa**")
+    col_h.markdown("**Hadir (H)**")
+    col_s.markdown("**Sakit (S)**")
+    col_i.markdown("**Izin (I)**")
+    col_a.markdown("**Alpa (A)**")
+
+    data_presensi = []
+
+    # Loop untuk input setiap siswa
+    for idx, nama in enumerate(daftar_nama):
+        c1, c2, c3, c4, c5 = st.columns([3, 1, 1, 1, 1])
+        c1.write(f"**{idx + 1}. {nama}**")
+        h = c2.number_input("Hadir", min_value=0, max_value=jumlah_hari, value=jumlah_hari, key=f"h_{idx}", label_visibility="collapsed")
+        s = c3.number_input("Sakit", min_value=0, max_value=jumlah_hari, value=0, key=f"s_{idx}", label_visibility="collapsed")
+        i = c4.number_input("Izin", min_value=0, max_value=jumlah_hari, value=0, key=f"i_{idx}", label_visibility="collapsed")
+        a = c5.number_input("Alpa", min_value=0, max_value=jumlah_hari, value=0, key=f"a_{idx}", label_visibility="collapsed")
+
+        persentase = (h / jumlah_hari) * 100 if jumlah_hari > 0 else 0
+
+        data_presensi.append({
+            "Nama Siswa": nama,
+            "Hadir (H)": h,
+            "Sakit (S)": s,
+            "Izin (I)": i,
+            "Alpa (A)": a,
+            "Persentase Kehadiran (%)": f"{persentase:.1f}%"
+        })
+
+    st.divider()
+    st.header("📊 Rekapitulasi & Laporan Kehadiran")
+
+    # Buat Dataframe Pandas
+    df = pd.DataFrame(data_presensi)
+    st.dataframe(df, use_container_width=True)
+
+    # Fitur Download ke File CSV/Excel
+    csv = df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Download Hasil Rekap (Format CSV)",
+        data=csv,
+        file_name=f'rekap_kehadiran_{nama_kelas.replace(" ", "_")}.csv',
+        mime='text/csv'
+    )
+else:
+    st.warning("Silakan masukkan minimal satu nama siswa terlebih dahulu.")
